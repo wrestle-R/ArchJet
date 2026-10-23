@@ -1,0 +1,44 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Print Arch",
+  "version": "0.1.0",
+  "identifier": "io.github.wrestle-r.print-arch",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Print Arch",
+        "width": 1280,
+        "height": 840,
+        "minWidth": 760,
+        "minHeight": 560,
+        "decorations": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src ipc: http://ipc.localhost"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["deb", "rpm"],
+    "shortDescription": "A local printer workspace for Linux",
+    "category": "Utility",
+    "linux": {
+      "deb": {
+        "depends": [
+          "libwebkit2gtk-4.1-0",
+          "libgtk-3-0",
+          "python3",
+          "cups-client",
+          "poppler-utils"
+        ]
+      }
+    }
+  }
+}
