@@ -5,7 +5,11 @@ use std::{
     process::{Command, Stdio},
     sync::Arc,
 };
-use tauri::Manager;
+use tauri::{
+    menu::{Menu, MenuItem},
+    tray::TrayIconBuilder,
+    Manager,
+};
 struct Backend {
     root: std::path::PathBuf,
 }
@@ -21,6 +25,10 @@ async fn call(
             .arg(root.join("engine.py"))
             .arg(&root)
             .arg(&action)
+            .env(
+                "PRINT_ARCH_EXECUTABLE",
+                std::env::current_exe().map_err(|e| e.to_string())?,
+            )
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
@@ -79,6 +87,8 @@ fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, _, _| {
             if let Some(window) = app.get_webview_window("main") {
+                let _ = window.show();
+                let _ = window.unminimize();
                 let _ = window.set_focus();
             }
         }))
@@ -117,6 +127,37 @@ fn main() {
                 .stdout(Stdio::null())
                 .stderr(Stdio::null())
                 .spawn()?;
+            let open = MenuItem::with_id(app, "open", "Open Print Arch", true, None::<&str>)?;
+            let hide = MenuItem::with_id(app, "hide", "Hide window", true, None::<&str>)?;
+            let quit = MenuItem::with_id(app, "quit", "Quit…", true, None::<&str>)?;
+            let menu = Menu::with_items(app, &[&open, &hide, &quit])?;
+            TrayIconBuilder::with_id("print-arch")
+                .icon(tauri::image::Image::from_bytes(include_bytes!(
+                    "../icons/icon.png"
+                ))?)
+                .tooltip("Print Arch")
+                .menu(&menu)
+                .on_menu_event(|app, event| {
+                    if let Some(window) = app.get_webview_window("main") {
+                        match event.id.as_ref() {
+                            "open" => {
+                                let _ = window.show();
+                                let _ = window.unminimize();
+                                let _ = window.set_focus();
+                            }
+                            "hide" => {
+                                let _ = window.hide();
+                            }
+                            "quit" => {
+                                let _ = window.show();
+                                let _ = window.set_focus();
+                                let _ = window.close();
+                            }
+                            _ => (),
+                        }
+                    }
+                })
+                .build(app)?;
             app.manage(Arc::new(Backend { root }));
             Ok(())
         })

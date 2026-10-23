@@ -17,7 +17,7 @@ A quiet workspace for local printing on Linux. Add documents, arrange the exact 
 - Live local queue, targeted job cancellation and structured IPP job state. Unknown outcomes are not reported as success; a repeated submission token is blocked.
 - A normal resizable Linux window, native decorations, keyboard file shortcut and narrow-window settings drawer.
 
-This targets **printers supported by your local CUPS installation**. It does not include every manufacturer's driver, and cannot promise support for every printer. Driverless IPP printers use their configured CUPS queue; other hardware needs its Linux driver. The P1007 has been exercised on real hardware. CUPS completed the jobs, but physical output quality remains unconfirmed. See the copy-accounting finding below.
+This targets **printers supported by your local CUPS installation**. It does not include every manufacturer's driver, and cannot promise support for every printer. Driverless IPP printers use their configured CUPS queue; other hardware needs its Linux driver. The P1007 has been exercised on real hardware. The user confirmed two GUI copies with good text/photo quality and two reverse-order sheets. The paper-out/refill recovery path remains unresolved; see [verification](verification.md).
 
 ## Session cleanup
 
@@ -32,7 +32,7 @@ A detached watchdog attempts the same cleanup if the GUI is killed. If the watch
 Build prerequisites:
 
 ```sh
-sudo pacman -S --needed base-devel rust nodejs npm webkit2gtk-4.1 gtk3 librsvg python cups poppler
+sudo pacman -S --needed base-devel rust nodejs npm webkit2gtk-4.1 gtk3 librsvg python cups poppler libappindicator-gtk3 github-cli
 sudo systemctl enable --now cups.service
 ```
 
@@ -66,7 +66,7 @@ npm run dev
 # Open http://127.0.0.1:1420/?demo
 ```
 
-The browser preview explicitly labels sample data. Real file access and printing require the desktop app. No cloud services, account, API key or environment file is required.
+The browser preview explicitly labels sample data. Real file access and printing require the desktop app. Printing needs no cloud service, API key or environment file. Optional private-repository updates need GitHub CLI authentication.
 
 ## Build and install locally
 
@@ -93,13 +93,13 @@ See [verification](verification.md) for the tested boundaries and pending hardwa
 
 ## Architecture
 
-React + TypeScript + Vite frontend → restricted Tauri commands → Rust process adapter → embedded Python standard-library engine → local CUPS and system converters. Subprocesses receive argument arrays, never shell strings. The engine uses system binaries under `/usr/bin` and private session directories (mode 0700). Imported documents are copied into the session, so a source changing later cannot silently change an already prepared job.
+React + TypeScript + Vite frontend → restricted Tauri commands → Rust process adapter → embedded Python standard-library engine → local CUPS and system converters. Subprocesses receive argument arrays, never shell strings. The engine discovers system binaries under `/usr/bin`, `/usr/sbin`, `/bin` and `/sbin` and private session directories (mode 0700). Imported documents are copied into the session, so a source changing later cannot silently change an already prepared job.
 
 Copies are expanded into the prepared document and submitted with CUPS copies fixed to one, avoiding driver/filter copy multiplication. Duplex copies with an odd page count receive a blank separator so each copy starts on a fresh sheet. All files finish preparation before the first CUPS submission. Each source document becomes a separate tracked job, in visible order. Other apps can add jobs between those submissions. Conversion runs with timeouts; partial submission errors direct the user to Queue instead of automatically resending.
 
 ## Hardware finding
 
-During the first P1007 test, the one-sheet baseline and two-page reverse-order job completed with the expected CUPS counts. A one-page/two-copy request using CUPS copies reported four sheets instead of two. Physical printing stopped immediately. The user subsequently confirmed five physical sheets total, matching the original requested counts, which points to CUPS overcounting. The implementation was changed to expand copies in the document with `lp -n 1`. Automated tests verify this corrected path, including duplex copy boundaries. The corrected path still needs a fresh physical test with a replenished, counted paper supply. CUPS counters are evidence, not a physical output count.
+During the first P1007 test, the one-sheet baseline and two-page reverse-order job completed with the expected CUPS counts. A one-page/two-copy request using CUPS copies reported four sheets instead of two. Physical printing stopped immediately. The user subsequently confirmed five physical sheets total, matching the original requested counts, which points to CUPS overcounting. The implementation was changed to expand copies in the document with `lp -n 1`. Automated tests verify this corrected path, including duplex copy boundaries. The corrected path was subsequently tested through the real GUI: the user confirmed exactly two sheets with good text/photo quality. The reverse-page GUI test also produced both requested pages. The empty-tray recovery test remained unresolved and was stopped at the user’s request. CUPS counters are evidence, not a physical output count.
 
 ## Current limits
 

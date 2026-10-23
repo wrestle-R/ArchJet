@@ -114,3 +114,28 @@ test("custom dropdown keyboard selection and per-file settings stay isolated", a
   await page.keyboard.press("Escape");
   await expect(page.getByRole("listbox")).not.toBeVisible();
 });
+
+test("appearance follows system, can be overridden, and release dialog is keyboard accessible", async ({
+  page,
+}) => {
+  await page.emulateMedia({ colorScheme: "dark" });
+  await page.goto("/?demo");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await page.getByRole("button", { name: "Updates and what’s new" }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.getByRole("button", { name: "light", exact: true }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await page
+    .getByRole("button", { name: "Check for updates", exact: true })
+    .click();
+  await expect(page.getByRole("dialog").getByRole("status")).toContainText(
+    "desktop app",
+  );
+  await page.getByRole("button", { name: "dark", exact: true }).click();
+  await page.screenshot({ path: "docs/dark-preview.png", fullPage: true });
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Updates and what’s new" }),
+  ).toBeFocused();
+});

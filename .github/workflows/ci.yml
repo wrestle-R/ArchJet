@@ -24,8 +24,40 @@ jobs:
       - run: npx playwright test
       - run: cargo fmt --manifest-path src-tauri/Cargo.toml --check
       - run: cargo check --manifest-path src-tauri/Cargo.toml --locked
+      - run: npm run tauri -- build --no-bundle
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-binary
+          path: src-tauri/target/release/print-arch
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: workspace-preview
           path: docs/workspace-preview.png
+
+  desktop:
+    needs: verify
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        desktop: [gnome, xfce]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: linux-binary
+          path: src-tauri/target/release
+      - run: chmod +x src-tauri/target/release/print-arch
+      - run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-0 libayatana-appindicator3-1 python3-gi gir1.2-atspi-2.0 at-spi2-core cups-client poppler-utils xvfb dbus-x11 imagemagick wmctrl gnome-shell xfce4
+      - name: Native desktop smoke
+        run: xvfb-run -a -s '-screen 0 1440x1000x24' dbus-run-session -- bash scripts/desktop-smoke.sh ${{ matrix.desktop }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: desktop-${{ matrix.desktop }}
+          path: |
+            desktop.png
+            desktop.log
+            app.log
+            windows.log

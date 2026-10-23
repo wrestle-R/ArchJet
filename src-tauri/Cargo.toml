@@ -1,11 +1,11 @@
 [package]
 name = "print-arch"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 [dependencies]
-tauri = { version = "2", features = [] }
+tauri = { version = "2", features = ["tray-icon", "image-png"] }
 serde_json = "1"
 rfd = { version = "0.15", default-features = false, features = ["xdg-portal", "tokio"] }
 

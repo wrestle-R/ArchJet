@@ -37,13 +37,25 @@ ROOT = None
 
 
 def tool(name):
-    path = Path("/usr/bin") / name
-    if path.is_file():
-        return str(path)
+    for directory in ("/usr/bin", "/usr/sbin", "/bin", "/sbin"):
+        path = Path(directory) / name
+        if path.is_file():
+            return str(path)
     if name == "magick" and Path("/usr/bin/convert").is_file():
         return "/usr/bin/convert"
     raise ValueError(
         f"{name} is missing. Open Printer setup for installation instructions."
+    )
+
+
+def local_server():
+    return next(
+        (
+            path
+            for path in ("/run/cups/cups.sock", "/var/run/cups/cups.sock")
+            if Path(path).exists()
+        ),
+        "localhost",
     )
 
 
@@ -58,7 +70,7 @@ def run(args, timeout=45):
             env={
                 **os.environ,
                 "LC_ALL": "C",
-                "CUPS_SERVER": "localhost",
+                "CUPS_SERVER": local_server(),
                 "IPP_PORT": "631",
             },
         )
@@ -755,6 +767,8 @@ def submit(payload):
             "state": "uncertain",
             "created": time.time(),
             "expandedCopies": True,
+            "source": item,
+            "options": options,
             "expectedSheets": (
                 (len(sequence) + 1) // 2 if sides != "one-sided" else len(sequence)
             )
@@ -816,6 +830,32 @@ def cancel_job(payload):
     return {"ok": True}
 
 
+def enable_queue(printer_id):
+    try:
+        run([tool("cupsenable"), printer_id])
+        run([tool("cupsaccept"), printer_id])
+    except ValueError as error:
+        if not any(
+            word in str(error).lower()
+            for word in ("auth", "forbidden", "not permitted")
+        ):
+            raise
+        # Only this fixed executable and the already-discovered queue are elevated.
+        # Polkit handles credentials in the desktop agent; the app never reads them.
+        run(
+            [
+                tool("pkexec"),
+                tool("lpadmin"),
+                "-h",
+                local_server(),
+                "-p",
+                printer_id,
+                "-E",
+            ],
+            180,
+        )
+
+
 def recover(payload):
     printer = next(
         (p for p in discover({})["printers"] if p["id"] == payload.get("printer")), None
@@ -826,8 +866,7 @@ def recover(payload):
         raise ValueError(
             "This printer has pending jobs. Use Resume existing job from Queue after checking the physical output, or cancel the exact job first."
         )
-    run([tool("cupsenable"), printer["id"]])
-    run([tool("cupsaccept"), printer["id"]])
+    enable_queue(printer["id"])
     if payload.get("firmware") and printer["compatibility"]:
         run([tool("hp-firmware"), "-n", "-d", printer["uri"]], 120)
     return discover({})
@@ -856,9 +895,8 @@ def resume_job(payload):
             "message": "The existing job is still processing. After paper is loaded, the printer may continue automatically. No new job was sent.",
         }
     if current["printerPaused"]:
-        run([tool("cupsenable"), printer_id])
-        run([tool("cupsaccept"), printer_id])
-    if current["state"] == "held":
+        enable_queue(printer_id)
+    if current["state"] in ("held", "pending", "stopped"):
         run([tool("lp"), "-i", ident, "-H", "resume"])
     return {
         "ok": True,
@@ -975,7 +1013,78 @@ def watch(parent):
     # Keep private session directory as evidence of incomplete cleanup, no false success claim.
 
 
+VERSION = "0.2.0"
+REPOSITORY = "wrestle-R/Print-Arch"
+UPDATE_ASSET = "print-arch-linux-x86_64"
+
+
+def release_info(_):
+    import platform
+    if platform.machine() != "x86_64":
+        raise ValueError("Automatic updates currently support Linux x86_64 only.")
+    gh = shutil.which("gh")
+    if not gh:
+        raise ValueError("Install GitHub CLI (gh) and run gh auth login to access this private repository.")
+    result = subprocess.run(
+        [gh, "release", "view", "--repo", REPOSITORY, "--json", "tagName,body,assets,isPrerelease"],
+        capture_output=True, text=True, timeout=45,
+    )
+    if result.returncode:
+        raise ValueError("Could not check GitHub releases. Check your connection and gh auth status; your account needs access to wrestle-R/Print-Arch.")
+    data = json.loads(result.stdout)
+    tag = data["tagName"]
+    if not re.fullmatch(r"v\d+\.\d+\.\d+", tag) or data["isPrerelease"]:
+        raise ValueError("No supported stable release is available.")
+    available = tuple(map(int, tag[1:].split("."))) > tuple(map(int, VERSION.split(".")))
+    assets = {item["name"] for item in data["assets"]}
+    if available and not {UPDATE_ASSET, UPDATE_ASSET + ".sha256"} <= assets:
+        raise ValueError("The latest release is missing its Linux binary or checksum. Try again after publishing finishes.")
+    return {"current": VERSION, "version": tag[1:], "available": available, "notes": data.get("body") or "No release notes provided."}
+
+
+def install_update(payload):
+    import hashlib
+    info = release_info({})
+    if not info["available"] or payload.get("version") != info["version"]:
+        raise ValueError("Release changed or this version is already installed. Check for updates again.")
+    if queue_status():
+        raise ValueError("Finish or cancel all pending print jobs before updating.")
+    install_dir = Path(os.environ.get("XDG_DATA_HOME", str(Path.home() / ".local/share"))) / "print-arch"
+    target = install_dir / "print-arch"
+    current = Path(os.environ.get("PRINT_ARCH_EXECUTABLE", "/nonexistent")).resolve()
+    if current != target.resolve() or not target.is_file() or target.is_symlink():
+        raise ValueError("In-app installation requires the per-user install. Run scripts/install-local.sh first; use your package manager for system packages.")
+    with tempfile.TemporaryDirectory(prefix="print-arch-update-") as temporary:
+        directory = Path(temporary)
+        result = subprocess.run([shutil.which("gh"), "release", "download", "v" + info["version"], "--repo", REPOSITORY, "--pattern", UPDATE_ASSET, "--pattern", UPDATE_ASSET + ".sha256", "--dir", temporary], capture_output=True, text=True, timeout=180)
+        if result.returncode:
+            raise ValueError("Update download failed. The installed app has not changed.")
+        binary = directory / UPDATE_ASSET
+        checksum = (directory / (UPDATE_ASSET + ".sha256")).read_text().split()[0]
+        if binary.stat().st_size > 150 * 1024 * 1024 or not re.fullmatch(r"[a-f0-9]{64}", checksum) or hashlib.sha256(binary.read_bytes()).hexdigest() != checksum:
+            raise ValueError("Update checksum verification failed. The installed app has not changed.")
+        with binary.open("rb") as source:
+            header = source.read(20)
+        if header[:5] != b"\x7fELF\x02" or header[18:20] != b"\x3e\x00":
+            raise ValueError("Update is not a Linux x86_64 executable.")
+        if queue_status():
+            raise ValueError("A print job arrived during download. Finish it before updating.")
+        descriptor, staged = tempfile.mkstemp(prefix=".update-", dir=install_dir)
+        try:
+            with os.fdopen(descriptor, "wb") as out, binary.open("rb") as source:
+                shutil.copyfileobj(source, out)
+                out.flush()
+                os.fsync(out.fileno())
+                os.fchmod(out.fileno(), 0o755)
+            os.replace(staged, target)
+        finally:
+            Path(staged).unlink(missing_ok=True)
+    return {"installed": info["version"], "message": "Update installed. Quit Print Arch, then open it again from your app launcher."}
+
+
 ACTIONS = {
+    "check-update": release_info,
+    "install-update": install_update,
     "discover": discover,
     "diagnostics": diagnostics,
     "folder": folder,
@@ -1006,7 +1115,7 @@ if __name__ == "__main__":
             if action not in ACTIONS:
                 raise ValueError("Unknown printer operation.")
             payload = json.load(sys.stdin)
-            if action in ("import", "submit", "cleanup", "recover", "cancel", "resume"):
+            if action in ("import", "submit", "cleanup", "recover", "cancel", "resume", "install-update"):
                 with (ROOT / ".lock").open("a") as lock:
                     fcntl.flock(lock, fcntl.LOCK_EX)
                     result = ACTIONS[action](payload)

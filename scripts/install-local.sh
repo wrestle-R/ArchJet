@@ -22,7 +22,7 @@ import sys
 root, target = sys.argv[1:]
 def quote(value):
     return '"' + value.replace('\\', '\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$').replace('%', '%%') + '"'
-Path(target).write_text('[Desktop Entry]\nType=Application\nName=Print Arch\nComment=Local printer workspace\nExec=' + quote(root + '/print-arch') + '\nIcon=' + root + '/icon.png\nTerminal=false\nCategories=Utility;Office;\nStartupNotify=true\nStartupWMClass=io.github.wrestle-r.print-arch\n')
+Path(target).write_text('[Desktop Entry]\nType=Application\nName=Print Arch\nComment=Local printer workspace\nExec=' + quote(root + '/print-arch') + '\nIcon=' + root + '/icon.png\nTerminal=false\nCategories=Utility;Office;\nStartupNotify=true\nStartupWMClass=Print-arch\n')
 PY
 if command -v update-desktop-database >/dev/null; then update-desktop-database "$launcher_dir"; fi
 printf 'Installed Print Arch at %s\nOpen it from your app launcher.\n' "$install_dir"

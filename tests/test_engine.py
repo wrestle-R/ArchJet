@@ -447,6 +447,7 @@ class BackendTests(unittest.TestCase):
             engine.cancel_all_local()
             run.assert_not_called()
 
+    @patch.object(engine, "tool", lambda name: "/usr/bin/" + name)
     def test_resume_held_job_keeps_original_identity(self):
         active = {"id": "Test-42", "state": "held", "printerPaused": False}
         with (
@@ -478,6 +479,7 @@ class BackendTests(unittest.TestCase):
             engine.resume_job({"id": "Test-42", "confirmed": True})
             run.assert_not_called()
 
+    @patch.object(engine, "tool", lambda name: "/usr/bin/" + name)
     def test_resume_paused_queue_creates_no_new_job(self):
         active = {"id": "Test-42", "state": "pending", "printerPaused": True}
         with (
@@ -492,7 +494,7 @@ class BackendTests(unittest.TestCase):
             engine.resume_job({"id": "Test-42", "confirmed": True})
             self.assertEqual(
                 [c.args[0] for c in run.call_args_list],
-                [["/usr/bin/cupsenable", "Test"], ["/usr/bin/cupsaccept", "Test"]],
+                [["/usr/bin/cupsenable", "Test"], ["/usr/bin/cupsaccept", "Test"], ["/usr/bin/lp", "-i", "Test-42", "-H", "resume"]],
             )
 
     def test_resume_needs_confirmation_and_live_job(self):
@@ -515,6 +517,37 @@ class BackendTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "pending jobs"):
                 engine.recover({"printer": "Test"})
             run.assert_not_called()
+
+    @patch.object(engine, "tool", lambda name: "/usr/bin/" + name)
+    def test_queue_enable_uses_native_auth_only_when_cups_requires_it(self):
+        def command(args, timeout=45):
+            if args[0] == "/usr/bin/cupsenable":
+                raise ValueError("cups-authentication-canceled")
+            return ""
+
+        with patch.object(engine, "run", side_effect=command) as run:
+            engine.enable_queue("Test")
+            self.assertEqual(
+                run.call_args.args[0],
+                [
+                    "/usr/bin/pkexec",
+                    "/usr/bin/lpadmin",
+                    "-h",
+                    engine.local_server(),
+                    "-p",
+                    "Test",
+                    "-E",
+                ],
+            )
+
+    @patch.object(engine, "tool", lambda name: "/usr/bin/" + name)
+    def test_non_auth_queue_errors_do_not_escalate(self):
+        with patch.object(
+            engine, "run", side_effect=ValueError("Connection refused")
+        ) as run:
+            with self.assertRaisesRegex(ValueError, "Connection refused"):
+                engine.enable_queue("Test")
+            self.assertEqual(run.call_count, 1)
 
     def test_image_import(self):
         image = self.root / "image.png"

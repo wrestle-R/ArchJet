@@ -31,6 +31,7 @@ import {
 import "@fontsource-variable/dm-sans";
 import "./style.css";
 import { Select } from "./components/Select";
+import { AppControls } from "./components/AppControls";
 
 type Doc = {
   id: string;
@@ -68,6 +69,9 @@ type Job = {
   reportedSheets?: number;
   expectedSheets?: number;
   accountingWarning?: string;
+  printer?: string;
+  source?: Pick<Doc, "id" | "name" | "pages" | "size" | "bytes">;
+  options?: Options;
 };
 type QueueJob = {
   state?: string;
@@ -588,6 +592,7 @@ function App() {
             Printers
           </button>
         </nav>
+        <AppControls native={native} />
         <button
           className="icon-button"
           title="Printer setup and help"
@@ -1201,6 +1206,44 @@ function App() {
                       </p>
                     )}
                   </div>
+                  {["cancelled", "failed", "queue-cleared"].includes(j.state) &&
+                    (j.source || docs.some((d) => d.name === j.name)) && (
+                      <button
+                        className="outline-button"
+                        disabled={
+                          !!busy || active.some((a) => a.id === j.cupsId)
+                        }
+                        onClick={() => {
+                          const source =
+                            j.source || docs.find((d) => d.name === j.name);
+                          if (!source) return;
+                          if (
+                            j.printer &&
+                            devices.some((p) => p.id === j.printer)
+                          )
+                            choosePrinter(j.printer);
+                          const prepared: Doc = {
+                            ...source,
+                            mode: "custom",
+                            range: j.pages.join(","),
+                            copies: j.copies,
+                            override: j.options,
+                          };
+                          setDocs((all) => [
+                            ...all.filter((d) => d.id !== source.id),
+                            prepared,
+                          ]);
+                          setSelected(source.id);
+                          requestToken.current = crypto.randomUUID();
+                          setView("print");
+                          setNotice(
+                            "Previous job is terminal. Pages and copies restored; review settings before sending a new print request.",
+                          );
+                        }}
+                      >
+                        Prepare reprint
+                      </button>
+                    )}
                   <span className="job-state">
                     {j.state === "queue-cleared"
                       ? "CUPS processing ended"
