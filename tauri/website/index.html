@@ -1,26 +1,289 @@
 <!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ArchJet — good ideas, on paper.</title>
-<meta name="description" content="A quiet printer workspace for Arch Linux. Pick your documents, arrange the exact pages and print locally through CUPS.">
-<meta name="theme-color" content="#f8f8f5"><link rel="icon" href="assets/mark.svg" type="image/svg+xml"><link rel="stylesheet" href="style.css"><script defer src="site.js"></script>
-</head>
-<body>
-<a class="skip-link" href="#main">Skip to content</a>
-<header class="site-header"><a class="wordmark" href="./" aria-label="ArchJet home"><img src="assets/mark.svg" width="30" height="30" alt="">ArchJet<span class="wordmark-dot">.</span></a><nav aria-label="Main"><a href="guide.html">Guide</a><a href="https://github.com/wrestle-R/ArchJet">GitHub <span aria-hidden="true">↗</span></a></nav></header>
-<main id="main">
-<section class="hero" aria-labelledby="hero-title">
-<div class="hero-art" aria-hidden="true"></div>
-<div class="hero-copy"><p class="overline">Made for Arch. Ready for paper.</p><h1 id="hero-title">A little less<br>guesswork.<br><span>A lot more print.</span></h1><p class="hero-description">Your documents. Your pages. Your printer.<br>A quiet workspace for printing on Linux.</p><div class="hero-actions"><a class="button" href="#install"><span aria-hidden="true">↓</span> Get ArchJet</a><a class="text-link" href="guide.html">Read the guide <span aria-hidden="true">↗</span></a></div><p class="compatibility">Linux x86_64 <span aria-hidden="true">/</span> Built around CUPS</p></div>
-</section>
-<section class="product section" aria-labelledby="product-title">
-<div class="section-heading"><h2 id="product-title">Good ideas.<br><span>On paper.</span></h2><div class="product-caption"><p>Everything in its place.<br>Before it leaves the printer.</p><div class="view-switch" role="group" aria-label="Preview appearance"><button type="button" data-preview="light" aria-pressed="true">Light</button><button type="button" data-preview="dark" aria-pressed="false">Dark</button></div></div></div>
-<figure class="app-preview"><img id="app-preview" src="assets/workspace-preview.png" alt="ArchJet workspace with sample documents, exact page order and print settings" width="1360" height="900" loading="lazy"><figcaption>Sample documents shown. Your files stay on your machine.</figcaption></figure>
-<div class="features"><article><span class="feature-number">01</span><h3>Your pages, in order.</h3><p>Odd, even or exactly <code>1,5,2–4,1</code>. Arrange files and set copies for each document.</p></article><article><span class="feature-number">02</span><h3>Keep it local.</h3><p>PDFs, Office files and images, converted and previewed on your machine. No document uploads.</p></article><article><span class="feature-number">03</span><h3>Let CUPS do its thing.</h3><p>Use your configured printers, with paper, colour and sides options reported by their drivers.</p></article></div>
-<div class="install" id="install"><div><p class="overline">Get started</p><h2>One small install.<br>Then, print.</h2><p>For Linux x86_64 with glibc 2.39+.<br><a href="guide.html#install">Check runtime dependencies first ↗</a></p><a class="text-link" href="https://github.com/wrestle-R/ArchJet/releases/latest">Browse downloads ↗</a></div><div class="terminal"><div class="terminal-heading"><span>terminal</span><button type="button" data-copy="install-command" aria-label="Copy installation commands">Copy <span aria-hidden="true">↗</span></button></div><pre id="install-command"><code>curl -fsSL https://raw.githubusercontent.com/wrestle-R/ArchJet/main/scripts/install-app.sh -o /tmp/install-archjet.sh
-bash /tmp/install-archjet.sh</code></pre><p>Latest stable release. Verified checksum. Installed just for you.</p></div></div>
-</section>
-</main><footer><a class="wordmark" href="./">ArchJet<span class="wordmark-dot">.</span></a><p>Built for the things worth putting on paper.</p><a href="guide.html">The guide ↗</a><a href="https://github.com/wrestle-R/ArchJet">Source ↗</a></footer>
-<p id="copy-status" class="sr-only" role="status"></p>
-</body></html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>ArchJet — your pages, your order.</title>
+    <meta
+      name="description"
+      content="A local printer workspace for Linux. Choose your documents, arrange the exact pages and print through CUPS."
+    />
+    <meta name="theme-color" content="#f7f7f4" />
+    <link rel="icon" href="assets/mark.svg" type="image/svg+xml" />
+    <script src="theme.js"></script>
+    <link rel="stylesheet" href="style.css" />
+    <script defer src="site.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="site-header">
+      <a class="wordmark" href="./" aria-label="ArchJet home"
+        ><img src="assets/mark.svg" width="34" height="34" alt="" />ArchJet</a
+      >
+      <nav aria-label="Main">
+        <a href="#pages">How it works</a><a href="guide.html">Guide</a
+        ><a class="source-link" href="https://github.com/wrestle-R/ArchJet"
+          >GitHub ↗</a
+        >
+      </nav>
+      <label class="theme-control"
+        ><span class="sr-only">Appearance</span
+        ><select data-theme-select aria-label="Appearance">
+          <option value="system">System</option>
+          <option value="light">Light</option>
+          <option value="dark">Dark</option>
+        </select></label
+      >
+    </header>
+    <main id="main">
+      <section class="hero wrap" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <p class="overline">
+            <span class="status-dot" aria-hidden="true"></span>A little order
+            for your printer.
+          </p>
+          <h1 id="hero-title">
+            Your pages.<br />Your order.<br /><em>Your call.</em>
+          </h1>
+          <p class="hero-description">
+            Choose your files. Set your pages. Print locally. <br />A quieter
+            workspace for printing on Linux.
+          </p>
+          <div class="hero-actions">
+            <a class="button" href="#install"
+              >Get ArchJet <span aria-hidden="true">↓</span></a
+            ><button class="text-link" type="button" data-open-preview>
+              Take a closer look <span aria-hidden="true">↗</span>
+            </button>
+          </div>
+        </div>
+        <figure class="hero-media" id="workspace">
+          <div class="preview-backdrop" aria-hidden="true"></div>
+          <button
+            class="preview-button"
+            type="button"
+            data-open-preview
+            aria-label="Enlarge the ArchJet workspace preview"
+          >
+            <img
+              data-theme-image
+              data-light="assets/workspace-light.webp"
+              data-dark="assets/workspace-dark.webp"
+              width="1360"
+              height="900"
+              alt="ArchJet workspace showing sample documents, page order and printer settings"
+              fetchpriority="high"
+              decoding="async"
+            /><noscript
+              ><img
+                src="assets/workspace-light.webp"
+                width="1360"
+                height="900"
+                alt="ArchJet workspace with sample documents" /></noscript
+            ><span class="preview-enlarge" aria-hidden="true"
+              >View workspace ↗</span
+            >
+          </button>
+          <figcaption>The real workspace, with sample documents.</figcaption>
+        </figure>
+        <script>
+          archjetTheme.apply();
+        </script>
+      </section>
+      <div class="format-strip wrap">
+        <p>
+          PDF <span aria-hidden="true">/</span> Office
+          <span aria-hidden="true">/</span> Images
+        </p>
+        <p>
+          <span class="status-dot" aria-hidden="true"></span>Local printing
+          through CUPS
+        </p>
+        <a href="guide.html#install"
+          >Made for Linux x86_64 <span aria-hidden="true">↗</span></a
+        >
+      </div>
+      <section class="page-story wrap" id="pages" aria-labelledby="pages-title">
+        <div class="story-heading">
+          <div>
+            <p class="overline">The order is yours</p>
+            <h2 id="pages-title">
+              Not every page.<br />Just <em>your pages.</em>
+            </h2>
+          </div>
+          <p>
+            Skip the pages you don’t need. Repeat the ones you do. Choose odd,
+            even or an exact sequence, with copies and settings for each file.
+          </p>
+        </div>
+        <div class="sequence-demo" aria-label="Interactive page order example">
+          <div class="sequence-toolbar">
+            <div
+              class="sequence-tabs"
+              role="group"
+              aria-label="Example page selection"
+            >
+              <button type="button" data-sequence="all" aria-pressed="false">
+                All pages</button
+              ><button type="button" data-sequence="odd" aria-pressed="false">
+                Odd pages</button
+              ><button type="button" data-sequence="custom" aria-pressed="true">
+                Custom order
+              </button>
+            </div>
+            <code id="sequence-expression">1,5,2–4,1</code>
+          </div>
+          <ol
+            class="page-sequence"
+            id="page-sequence"
+            aria-label="Pages in print order"
+          >
+            <li>
+              <span class="sheet-index">01</span><strong>1</strong
+              ><span class="sheet-lines" aria-hidden="true"></span
+              ><span class="sheet-footer">ARCHJET / PAGE 1</span>
+            </li>
+            <li>
+              <span class="sheet-index">02</span><strong>5</strong
+              ><span class="sheet-lines" aria-hidden="true"></span
+              ><span class="sheet-footer">ARCHJET / PAGE 5</span>
+            </li>
+            <li>
+              <span class="sheet-index">03</span><strong>2</strong
+              ><span class="sheet-lines" aria-hidden="true"></span
+              ><span class="sheet-footer">ARCHJET / PAGE 2</span>
+            </li>
+            <li>
+              <span class="sheet-index">04</span><strong>3</strong
+              ><span class="sheet-lines" aria-hidden="true"></span
+              ><span class="sheet-footer">ARCHJET / PAGE 3</span>
+            </li>
+            <li>
+              <span class="sheet-index">05</span><strong>4</strong
+              ><span class="sheet-lines" aria-hidden="true"></span
+              ><span class="sheet-footer">ARCHJET / PAGE 4</span>
+            </li>
+            <li>
+              <span class="sheet-index">06</span><strong>1</strong
+              ><span class="sheet-lines" aria-hidden="true"></span
+              ><span class="sheet-footer">ARCHJET / PAGE 1</span>
+            </li>
+          </ol>
+          <div class="sequence-caption">
+            <p id="sequence-status" role="status">
+              Six pages. In exactly that order.
+            </p>
+            <span>Interactive example. No printing.</span>
+          </div>
+        </div>
+        <div class="principles">
+          <article>
+            <span class="feature-number">01 / On your machine</span>
+            <h3>Your files <em>stay yours.</em></h3>
+            <p>
+              Documents are converted and previewed locally. No uploads, no
+              cloud document queue. Just your files and your printer.
+            </p>
+            <a class="text-link" href="guide.html#workspace"
+              >Meet the workspace ↗</a
+            >
+          </article>
+          <article>
+            <span class="feature-number">02 / At home on Linux</span>
+            <h3>Built around <em>CUPS.</em></h3>
+            <p>
+              Use your configured printers and the options their drivers report.
+              Native file pickers, a local queue and clear choices when you
+              close the app.
+            </p>
+            <a class="text-link" href="guide.html#printer-setup"
+              >Set up your printer ↗</a
+            >
+          </article>
+        </div>
+      </section>
+      <section
+        class="install-section"
+        id="install"
+        aria-labelledby="install-title"
+      >
+        <div class="install wrap">
+          <div>
+            <p class="overline">Get ArchJet</p>
+            <h2 id="install-title">
+              Make room<br />for a <em>better print.</em>
+            </h2>
+            <p class="install-requirements">
+              Linux x86_64 <span aria-hidden="true">/</span> glibc 2.39+
+            </p>
+            <a class="text-link" href="guide.html#install"
+              >Check dependencies first ↗</a
+            >
+          </div>
+          <div class="install-code">
+            <div class="terminal">
+              <div class="terminal-heading">
+                <span><span aria-hidden="true">›_</span> Terminal</span
+                ><button
+                  type="button"
+                  data-copy="install-command"
+                  aria-label="Copy installation commands"
+                >
+                  Copy ↗
+                </button>
+              </div>
+              <pre
+                id="install-command"
+              ><code>curl -fsSL https://raw.githubusercontent.com/wrestle-R/ArchJet/main/scripts/install-app.sh -o /tmp/install-archjet.sh
+bash /tmp/install-archjet.sh</code></pre>
+              <p class="terminal-note">
+                <span aria-hidden="true">✓</span> Latest stable release.
+                Checksum verified.
+              </p>
+            </div>
+            <p class="download-alternative">
+              Prefer the files?
+              <a
+                class="text-link"
+                href="https://github.com/wrestle-R/ArchJet/releases/latest"
+                >Browse releases ↗</a
+              >
+            </p>
+          </div>
+        </div>
+      </section>
+    </main>
+    <footer class="wrap">
+      <a class="wordmark" href="./"
+        ><img src="assets/mark.svg" width="28" height="28" alt="" />ArchJet</a
+      >
+      <p>Good ideas deserve paper.</p>
+      <a href="guide.html">Guide ↗</a
+      ><a href="https://github.com/wrestle-R/ArchJet">GitHub ↗</a>
+    </footer>
+    <dialog id="workspace-dialog" aria-labelledby="preview-title">
+      <div class="dialog-heading">
+        <h2 id="preview-title">A closer look.</h2>
+        <button
+          type="button"
+          data-close-preview
+          aria-label="Close workspace preview"
+        >
+          Close <span aria-hidden="true">×</span>
+        </button>
+      </div>
+      <img
+        data-theme-image
+        data-light="assets/workspace-light.webp"
+        data-dark="assets/workspace-dark.webp"
+        width="1360"
+        height="900"
+        alt="Full ArchJet workspace with sample documents and print settings"
+        loading="lazy"
+        decoding="async"
+      />
+      <p>Sample documents shown. Real printing happens in the desktop app.</p>
+    </dialog>
+    <p id="copy-status" class="sr-only" role="status"></p>
+  </body>
+</html>

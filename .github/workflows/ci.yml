@@ -92,5 +92,6 @@ jobs:
           cd release/stage
           sha256sum archjet-linux-x86_64 > archjet-linux-x86_64.sha256
           sha256sum print-arch-linux-x86_64 > print-arch-linux-x86_64.sha256
+          gzip -9 -c archjet-linux-x86_64 > archjet-linux-x86_64.gz
           rm archjet
           gh release create "$GITHUB_REF_NAME" ./* --repo "$GITHUB_REPOSITORY" --title "ArchJet $GITHUB_REF_NAME" --notes-file ../../tauri/website/content/release-notes.md

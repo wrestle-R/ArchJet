@@ -15,7 +15,7 @@ A quiet workspace for local printing on Linux. Add documents, arrange the exact 
 - CUPS printer discovery and driver-reported paper, duplex and colour capabilities. Printer setup opens the local CUPS administration page.
 - HP LaserJet P1007 profile: USB presence check and 600 DPI grayscale raster output. Queue/firmware recovery is an explicit action.
 - Live local queue, targeted job cancellation and structured IPP job state. Unknown outcomes are not reported as success; a repeated submission token is blocked.
-- A normal resizable Linux window, native decorations, keyboard file shortcut and narrow-window settings drawer.
+- A normal resizable Linux window, app-drawn title bar controls, keyboard file shortcut and narrow-window settings drawer.
 
 This targets **printers supported by your local CUPS installation**. It does not include every manufacturer's driver, and cannot promise support for every printer. Driverless IPP printers use their configured CUPS queue; other hardware needs its Linux driver. The P1007 has been exercised on real hardware. The user confirmed two GUI copies with good text/photo quality and two reverse-order sheets. The paper-out/refill recovery path remains unresolved; see [verification](verification.html).
 

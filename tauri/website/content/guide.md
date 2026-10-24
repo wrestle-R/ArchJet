@@ -30,7 +30,7 @@ curl -fsSL https://raw.githubusercontent.com/wrestle-R/ArchJet/main/scripts/inst
 bash /tmp/install-archjet.sh
 ```
 
-The installer downloads the latest stable release, verifies its SHA-256 checksum and installs it per-user under `~/.local/share/archjet` (or `$XDG_DATA_HOME`). It creates the ArchJet launcher, requires no GitHub login and does not install system packages. Fully quit the app before updating. Set `ARCHJET_TAG=v0.3.0` before `bash` to pin a specific release. Older Print Arch launchers are retired after a successful install; the old binary remains available for rollback.
+The installer downloads a compressed copy of the latest stable release, resumes interrupted transfers, verifies the unpacked binary’s SHA-256 checksum and installs it per-user under `~/.local/share/archjet` (or `$XDG_DATA_HOME`). It creates the ArchJet launcher, requires no GitHub login and does not install system packages. Fully quit the app before updating. Set `ARCHJET_TAG=v0.3.0` before `bash` to pin a specific release. Older Print Arch launchers are retired after a successful install; the old binary remains available for rollback.
 
 ### Office documents and images
 
@@ -52,7 +52,7 @@ Use the **Appearance** selector in the top bar to choose Light, Dark or System. 
 
 The tray menu offers Open, Hide and Quit. Closing the window still opens the cleanup dialog. Hyprland needs a StatusNotifier tray host (for example, the Waybar tray module); GNOME needs an AppIndicator extension for a visible tray icon. The app remains usable without one.
 
-On startup, ArchJet checks stable GitHub Releases in the background and opens an update dialog only when a newer version is available. The dialog shows that release’s notes and offers **Install**. The update button lets you check again manually; an up-to-date result or connection error appears in the top bar without opening a dialog. Downloads are verified against the release SHA-256 checksum and replace only the per-user installation atomically. Pending print jobs block installation. Quit and reopen afterward. System package installations should use their package manager. A network or checksum failure leaves the installed app unchanged. The checksum detects corruption; release authenticity relies on HTTPS and your GitHub account access.
+On startup, ArchJet checks stable GitHub Releases in the background and opens an update dialog only when a newer version is available. The dialog shows that release’s notes and offers **Install**. The update button lets you check again manually; an up-to-date result or connection error appears in the top bar without opening a dialog. Downloads are verified against the release SHA-256 checksum and replace only the per-user installation atomically. Pending print jobs block installation. Quit and reopen afterward. System package installations should use their package manager. A network or checksum failure leaves the installed app unchanged. The checksum detects corruption; release authenticity relies on HTTPS and the repository’s release publishing permissions.
 
 For source-build updates, close ArchJet and run this from your checkout:
 
