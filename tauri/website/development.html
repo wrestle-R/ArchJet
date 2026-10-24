@@ -1,0 +1,83 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Under the hood. — ArchJet</title><meta name="description" content="ArchJet setup, usage, printer recovery and development documentation."><link rel="icon" href="assets/mark.svg"><link rel="stylesheet" href="style.css"></head><body class="doc"><a class="skip-link" href="#main">Skip to content</a><header class="site-header doc-header"><a class="wordmark" href="./"><img src="assets/mark.svg" width="30" height="30" alt="">ArchJet<span class="wordmark-dot">.</span></a><nav aria-label="Main"><a href="./">Home</a><a href="https://github.com/wrestle-R/ArchJet">GitHub ↗</a></nav></header><main id="main" class="doc-layout"><nav class="doc-nav" aria-label="Guide navigation"><a class="" href="guide.html">Using ArchJet</a><a class="active" href="development.html">Development</a><a class="" href="verification.html">Verification</a><a class="" href="changelog.html">Changelog</a><span class="doc-group">On this page</span><a href="#what-works">What works</a><a href="#session-cleanup">Session cleanup</a><a href="#arch-linux-setup">Arch Linux setup</a><a href="#develop">Develop</a><a href="#build-and-install-locally">Build and install locally</a><a href="#verify">Verify</a><a href="#architecture">Architecture</a><a href="#hardware-finding">Hardware finding</a><a href="#current-limits">Current limits</a><a href="#references">References</a><a href="#repository-layout">Repository layout</a></nav><article><p class="overline">ArchJet / development</p><h1>Under the hood.</h1><p>A quiet workspace for local printing on Linux. Add documents, arrange the exact pages, check the preview, and send them to a CUPS printer.</p>
+<p><img alt="Workspace preview using sample documents" src="assets/workspace-preview.png" /></p>
+<h2 id="what-works">What works</h2>
+<ul>
+<li>Native desktop file and folder pickers through the XDG desktop portal, plus file drop.</li>
+<li>Folder review with optional subfolders; PDFs, DOC/DOCX, ODT, RTF, PPTX, XLSX, PNG, JPEG, TIFF and WebP.</li>
+<li>Local office conversion, image conversion, document snapshots and page preview.</li>
+<li>Multiple files with drag ordering and a keyboard-accessible move-earlier button.</li>
+<li>All, odd, even and custom pages. <code>1,5,2-4,1</code> preserves that exact sequence, including the repeated page. Reverse ranges work too.</li>
+<li>Per-document pages and copies; shared paper, orientation, scaling and sides controls with optional per-file overrides.</li>
+<li>CUPS printer discovery and driver-reported paper, duplex and colour capabilities. Printer setup opens the local CUPS administration page.</li>
+<li>HP LaserJet P1007 profile: USB presence check and 600 DPI grayscale raster output. Queue/firmware recovery is an explicit action.</li>
+<li>Live local queue, targeted job cancellation and structured IPP job state. Unknown outcomes are not reported as success; a repeated submission token is blocked.</li>
+<li>A normal resizable Linux window, native decorations, keyboard file shortcut and narrow-window settings drawer.</li>
+</ul>
+<p>This targets <strong>printers supported by your local CUPS installation</strong>. It does not include every manufacturer's driver, and cannot promise support for every printer. Driverless IPP printers use their configured CUPS queue; other hardware needs its Linux driver. The P1007 has been exercised on real hardware. The user confirmed two GUI copies with good text/photo quality and two reverse-order sheets. The paper-out/refill recovery path remains unresolved; see <a href="verification.html">verification</a>.</p>
+<h2 id="session-cleanup">Session cleanup</h2>
+<p>This app deliberately keeps no document history or saved settings between sessions.</p>
+<p>Closing offers <strong>Finish printing, then exit</strong> or <strong>Cancel all printing and exit</strong>. The latter cancels <strong>all pending jobs on the local CUPS server</strong>, including jobs submitted by other apps. Finish waits for every local queue to clear first. The UI explains this scope before exit. Documents, conversion files, drafts and app settings are cleared.</p>
+<p>A detached watchdog attempts the same cleanup if the GUI is killed. If the watchdog is also killed or the machine loses power, a private recovery marker lets the next launch retry cleanup before allowing new submissions. A permissions failure is reported rather than claiming cleanup succeeded. Completed-job records managed by CUPS, printer firmware buffers, and system logs are outside app-history cleanup; paper already printed cannot be recalled. This is not a secure-erasure tool.</p>
+<h2 id="arch-linux-setup">Arch Linux setup</h2>
+<p>Build prerequisites:</p>
+<pre><code class="language-sh">sudo pacman -S --needed base-devel rust nodejs npm webkit2gtk-4.1 gtk3 librsvg python cups poppler libappindicator-gtk3
+sudo systemctl enable --now cups.service
+</code></pre>
+<p>Optional document converters and HP support:</p>
+<pre><code class="language-sh">sudo pacman -S --needed libreoffice-fresh imagemagick
+# Only for HP devices which require HPLIP:
+sudo pacman -S --needed hplip
+# For models requiring the proprietary plugin, review its licence and install:
+hp-plugin -i
+</code></pre>
+<p>If you use an AUR helper, the app can show <code>yay -S hplip-plugin</code> or <code>paru -S hplip-plugin</code> when appropriate. It never runs package installation or sudo commands for you. Driverless printers do not need HPLIP.</p>
+<p>Under Hyprland, install and configure <code>xdg-desktop-portal-hyprland</code> and a file chooser backend such as <code>xdg-desktop-portal-gtk</code> or KDE's backend. The native dialog uses the portal; your portal configuration chooses the actual file picker.</p>
+<h2 id="develop">Develop</h2>
+<p>Use Node.js 22 LTS or newer and a current stable Rust toolchain.</p>
+<pre><code class="language-sh">cd tauri
+npm ci
+npm run desktop
+</code></pre>
+<p>Browser-only design preview:</p>
+<pre><code class="language-sh">npm run dev
+# Open http://127.0.0.1:1420/?demo
+</code></pre>
+<p>The browser preview explicitly labels sample data. Real file access and printing require the desktop app. Printing needs no cloud service, API key or environment file. Updates use the public GitHub releases API and need no login.</p>
+<h2 id="build-and-install-locally">Build and install locally</h2>
+<pre><code class="language-sh">cd tauri
+npm ci
+npm run tauri -- build --no-bundle
+bash ../scripts/install-local.sh
+</code></pre>
+<p>This installs the binary, icon and desktop launcher under your user data directory, without sudo. Open <strong>ArchJet</strong> from your desktop launcher. Run the same commands to update after closing the app.</p>
+<h2 id="verify">Verify</h2>
+<pre><code class="language-sh">npm run check
+npx playwright install chromium
+npx playwright test
+cargo check --manifest-path src-tauri/Cargo.toml --locked
+</code></pre>
+<p>Backend tests exercise real PDF assembly and preview, image conversion, ordering, duplicate prevention, cleanup failures and disconnected devices. Print submission and cancellation are mocked in tests, so tests consume no paper. Browser tests cover controls, capabilities, narrow windows and a native IPC contract test using the actual Python conversion/preview backend.</p>
+<p>See <a href="verification.html">verification</a> for the tested boundaries and pending hardware checks.</p>
+<h2 id="architecture">Architecture</h2>
+<p>React + TypeScript + Vite frontend → restricted Tauri commands → Rust process adapter → embedded Python standard-library engine → local CUPS and system converters. Subprocesses receive argument arrays, never shell strings. The engine discovers system binaries under <code>/usr/bin</code>, <code>/usr/sbin</code>, <code>/bin</code> and <code>/sbin</code> and private session directories (mode 0700). Imported documents are copied into the session, so a source changing later cannot silently change an already prepared job.</p>
+<p>Copies are expanded into the prepared document and submitted with CUPS copies fixed to one, avoiding driver/filter copy multiplication. Duplex copies with an odd page count receive a blank separator so each copy starts on a fresh sheet. All files finish preparation before the first CUPS submission. Each source document becomes a separate tracked job, in visible order. Other apps can add jobs between those submissions. Conversion runs with timeouts; partial submission errors direct the user to Queue instead of automatically resending.</p>
+<h2 id="hardware-finding">Hardware finding</h2>
+<p>During the first P1007 test, the one-sheet baseline and two-page reverse-order job completed with the expected CUPS counts. A one-page/two-copy request using CUPS copies reported four sheets instead of two. Physical printing stopped immediately. The user subsequently confirmed five physical sheets total, matching the original requested counts, which points to CUPS overcounting. The implementation was changed to expand copies in the document with <code>lp -n 1</code>. Automated tests verify this corrected path, including duplex copy boundaries. The corrected path was subsequently tested through the real GUI: the user confirmed exactly two sheets with good text/photo quality. The reverse-page GUI test also produced both requested pages. The empty-tray recovery test remained unresolved and was stopped at the user’s request. CUPS counters are evidence, not a physical output count.</p>
+<h2 id="current-limits">Current limits</h2>
+<ul>
+<li>Linux only. Physical printers beyond the P1007 profile have not been tested.</li>
+<li>Preview shows the converted source page, not a calibrated physical paper simulation. Scaling and orientation are applied at submission by CUPS.</li>
+<li>Office layout depends on LibreOffice and locally installed fonts. Inspect its converted preview before printing.</li>
+<li>Image imports currently use the first frame of multi-frame TIFF/WebP files.</li>
+<li>Thumbnail-based page rearrangement is not yet implemented. Exact page sequences are entered in the page field.</li>
+<li>Active queue status is polled. No invented percentage or claim of physically verified output.</li>
+<li>Cleanup is bounded by CUPS permissions and operating-system process lifetime. Recovery cannot run while the machine is off.</li>
+</ul>
+<h2 id="references">References</h2>
+<p>The desktop/build workflow takes inspiration from <a href="https://github.com/wrestle-R/multi-codex">multi-codex</a>. Printing follows <a href="https://www.cups.org/doc/options.html">CUPS command-line options</a>, and desktop dependencies follow <a href="https://v2.tauri.app/start/prerequisites/">Tauri prerequisites</a>.</p>
+<h2 id="repository-layout">Repository layout</h2>
+<p>The visible root folders are <code>tauri/</code>, <code>local-docs/</code>, <code>release/</code> and <code>scripts/</code>. <code>tauri/</code> contains the frontend (<code>src/</code>), native Rust app (<code>src-tauri/</code>), Python backend (<code>backend/</code>), tests and website source (<code>website/</code>). <code>local-docs/</code> is ignored private project memory and is never committed. <code>release/</code> contains ignored local build/download artifacts. <code>.github/</code> remains at the root because GitHub Actions requires it there.</p>
+<h3 id="website">Website</h3>
+<p>The website is static HTML, CSS and JavaScript in <code>tauri/website/</code>. Documentation source lives in <code>content/</code>. Regenerate the HTML guide with <code>python3 scripts/build-docs.py</code> from the repository root (requires the Python Markdown package, <code>python-markdown</code> on Arch or <code>python3-markdown</code> on Ubuntu). Preview with <code>python3 -m http.server 4173 --directory tauri/website</code>.</p>
+<h3 id="vercel-deployment">Vercel deployment</h3>
+<p>The public landing page and docs are deployed at https://archjet.vercel.app. Vercel is connected to the wrestle-R/ArchJet GitHub repository, with main as the production branch. Root vercel.json selects tauri/website as the static output directory and disables package installation and application builds. Push website changes to main to deploy automatically. Local project metadata stays ignored in .vercel/; the website requires no environment variables or env files.</p></article></main><footer><a class="wordmark" href="./">ArchJet<span class="wordmark-dot">.</span></a><p>Built for the things worth putting on paper.</p><a href="https://github.com/wrestle-R/ArchJet">Source ↗</a></footer></body></html>

@@ -12,3 +12,15 @@ __pycache__/
 /release/
 
 /src-tauri/gen/
+
+/tauri/node_modules/
+/tauri/dist/
+/tauri/src-tauri/target/
+/tauri/src-tauri/gen/
+/tauri/test-results/
+/tauri/playwright-report/
+/tauri/.ruff_cache/
+
+/.vercel/
+.vercel
+.env*

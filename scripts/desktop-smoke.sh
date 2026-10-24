@@ -21,12 +21,12 @@ else
   startxfce4 > desktop.log 2>&1 & desktop_pid=$!
   sleep 8
 fi
-./src-tauri/target/release/print-arch > app.log 2>&1 & app_pid=$!
+./tauri/src-tauri/target/release/archjet > app.log 2>&1 & app_pid=$!
 python3 scripts/native-smoke.py
 kill -0 "$app_pid"
 if [[ "$1" == xfce ]]; then
   wmctrl -l | tee windows.log
-  wmctrl -l | grep -q 'Print Arch'
+  wmctrl -l | grep -q 'ArchJet'
 fi
 # Screenshot records the complete desktop under test, without private documents.
 import -window root desktop.png

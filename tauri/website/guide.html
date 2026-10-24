@@ -1,0 +1,58 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>The ArchJet guide. — ArchJet</title><meta name="description" content="ArchJet setup, usage, printer recovery and development documentation."><link rel="icon" href="assets/mark.svg"><link rel="stylesheet" href="style.css"></head><body class="doc"><a class="skip-link" href="#main">Skip to content</a><header class="site-header doc-header"><a class="wordmark" href="./"><img src="assets/mark.svg" width="30" height="30" alt="">ArchJet<span class="wordmark-dot">.</span></a><nav aria-label="Main"><a href="./">Home</a><a href="https://github.com/wrestle-R/ArchJet">GitHub ↗</a></nav></header><main id="main" class="doc-layout"><nav class="doc-nav" aria-label="Guide navigation"><a class="active" href="guide.html">Using ArchJet</a><a class="" href="development.html">Development</a><a class="" href="verification.html">Verification</a><a class="" href="changelog.html">Changelog</a><span class="doc-group">On this page</span><a href="#workspace">Workspace</a><a href="#install">Install</a><a href="#appearance-tray-and-updates">Appearance, tray and updates</a><a href="#when-paper-runs-out">When paper runs out</a><a href="#window-controls">Window controls</a><a href="#closing-the-app">Closing the app</a><a href="#development-and-testing">Development and testing</a></nav><article><p class="overline">ArchJet / guide</p><h1>The ArchJet guide.</h1><h2 id="workspace">Workspace</h2>
+<p>Add PDFs, Office documents or images using the native file picker, a folder picker, or drag and drop. Reorder files, choose odd/even pages, or enter an exact sequence like <code>1,5,2-4,1</code>. Pages and copies stay specific to each document. Paper, orientation, scaling, colour and sides follow the selected printer’s capabilities, with optional per-file overrides.</p>
+<p>Documents and print processing stay on your device. Startup and manual update checks contact the public GitHub releases API. Documents are never uploaded.</p>
+<h2 id="install">Install</h2>
+<p>ArchJet is available for Linux x86_64. Release builds need glibc 2.39 or newer, GTK 3 and WebKitGTK 4.1. Install the runtime dependencies first.</p>
+<h3 id="arch-linux">Arch Linux</h3>
+<pre><code class="language-sh">sudo pacman -S --needed webkit2gtk-4.1 gtk3 libappindicator-gtk3 python cups poppler
+sudo systemctl enable --now cups.service
+</code></pre>
+<h3 id="ubuntu-2404-or-newer">Ubuntu 24.04 or newer</h3>
+<pre><code class="language-sh">sudo apt install libwebkit2gtk-4.1-0 libgtk-3-0 libayatana-appindicator3-1 python3 cups-client poppler-utils
+</code></pre>
+<h3 id="download-and-install">Download and install</h3>
+<pre><code class="language-sh">curl -fsSL https://raw.githubusercontent.com/wrestle-R/ArchJet/main/scripts/install-app.sh -o /tmp/install-archjet.sh
+bash /tmp/install-archjet.sh
+</code></pre>
+<p>The installer downloads the latest stable release, verifies its SHA-256 checksum and installs it per-user under <code>~/.local/share/archjet</code> (or <code>$XDG_DATA_HOME</code>). It creates the ArchJet launcher, requires no GitHub login and does not install system packages. Fully quit the app before updating. Set <code>ARCHJET_TAG=v0.3.0</code> before <code>bash</code> to pin a specific release. Older Print Arch launchers are retired after a successful install; the old binary remains available for rollback.</p>
+<h3 id="office-documents-and-images">Office documents and images</h3>
+<pre><code class="language-sh">sudo pacman -S --needed libreoffice-fresh imagemagick
+</code></pre>
+<p>On Ubuntu, install <code>libreoffice</code> and <code>imagemagick</code>. Document appearance depends on the locally installed fonts and converters, so check the preview.</p>
+<h3 id="printer-setup">Printer setup</h3>
+<p>On Hyprland, configure the XDG desktop portal with a GTK or KDE file chooser backend. The app uses the native picker. <strong>Printers → Add printer</strong> opens local CUPS setup. Driverless printers use their configured CUPS queue; other printers need their Linux driver. Setup checks installed tools and shows Arch commands, including an installed AUR helper where appropriate. It never installs packages for you.</p>
+<p>If the same printer appears twice, check CUPS: a direct USB queue and an HPLIP queue can point to the same hardware. ArchJet lists configured queues. It does not delete or merge them by model name.</p>
+<h2 id="appearance-tray-and-updates">Appearance, tray and updates</h2>
+<p>Use the <strong>Appearance</strong> selector in the top bar to choose Light, Dark or System. Appearance follows your desktop by default and is reset with session cleanup. The document page stays unchanged in dark mode.</p>
+<p>The tray menu offers Open, Hide and Quit. Closing the window still opens the cleanup dialog. Hyprland needs a StatusNotifier tray host (for example, the Waybar tray module); GNOME needs an AppIndicator extension for a visible tray icon. The app remains usable without one.</p>
+<p>On startup, ArchJet checks stable GitHub Releases in the background and opens an update dialog only when a newer version is available. The dialog shows that release’s notes and offers <strong>Install</strong>. The update button lets you check again manually; an up-to-date result or connection error appears in the top bar without opening a dialog. Downloads are verified against the release SHA-256 checksum and replace only the per-user installation atomically. Pending print jobs block installation. Quit and reopen afterward. System package installations should use their package manager. A network or checksum failure leaves the installed app unchanged. The checksum detects corruption; release authenticity relies on HTTPS and your GitHub account access.</p>
+<p>For source-build updates, close ArchJet and run this from your checkout:</p>
+<pre><code class="language-sh">git pull --ff-only
+cd tauri
+npm ci
+npm run tauri -- build --no-bundle
+bash ../scripts/install-local.sh
+</code></pre>
+<p>The same installer replaces the local app and desktop launcher.</p>
+<h2 id="when-paper-runs-out">When paper runs out</h2>
+<p>Add paper and check for a jam or open cover. The printer may continue the existing job automatically. If it stays held or the queue is paused, open <strong>Queue → Paper added / resume</strong>, check the physical output, and confirm <strong>Resume existing job</strong>.</p>
+<p><strong>Known P1007 limitation:</strong> the physical empty-tray/refill test did not recover reliably and was stopped at the user’s request. Do not treat that hardware path as verified. Cancel the stalled job before any deliberate reprint; reconnect/power-cycle recovery may also require loading HP firmware.</p>
+<p>Resume keeps the same CUPS job ID and does not create a new request. A driver can still restart an interrupted job from the beginning, so if some pages already printed, inspect them first. Cancel an already-printed job and select only missing pages when necessary. Unknown outcomes are never automatically reprinted.</p>
+<h2 id="window-controls">Window controls</h2>
+<p>ArchJet draws its own title bar on every desktop, including Hyprland. Use the top-right buttons to minimise, maximise/restore or close. Drag the title bar to move the window and double-click it to maximise or restore. Closing opens the cleanup choices below.</p>
+<h2 id="closing-the-app">Closing the app</h2>
+<p>Choose <strong>Finish printing, then exit</strong> or <strong>Cancel all printing and exit</strong>. Cleanup affects <strong>all pending jobs on the local CUPS server</strong>, including jobs from other apps. Documents, drafts, app history and preferences are cleared on exit.</p>
+<p>A separate watchdog attempts cleanup after a force quit. A recovery marker lets the next launch retry if the watchdog or machine also stopped. Queue recovery uses the local CUPS socket and requests native system authentication when CUPS requires administrator approval. The app never handles your password. CUPS permissions can prevent cancelling another user’s jobs; the app reports that failure. Printer-buffered pages, CUPS system history and operating-system logs are outside app-history cleanup.</p>
+<h2 id="development-and-testing">Development and testing</h2>
+<pre><code class="language-sh">cd tauri
+npm ci
+npm run desktop
+</code></pre>
+<p>For a browser-only design preview, run <code>npm run dev</code> and open <code>http://127.0.0.1:1420/?demo</code>. Sample data is explicitly labelled; real printing requires the desktop app.</p>
+<pre><code class="language-sh">npm run check
+npx playwright install chromium
+npx playwright test
+cargo check --manifest-path src-tauri/Cargo.toml --locked
+</code></pre>
+<p><a href="verification.html">Verification results and hardware limits</a> · <a href="development.html">Architecture, dependencies and detailed setup</a></p>
+<p>ArchJet uses React, TypeScript, Tauri and a local Python/CUPS adapter. The desktop install/update workflow takes inspiration from <a href="https://github.com/wrestle-R/multi-codex">multi-codex</a>. Broad CUPS support is the goal; every printer model is not claimed tested.</p></article></main><footer><a class="wordmark" href="./">ArchJet<span class="wordmark-dot">.</span></a><p>Built for the things worth putting on paper.</p><a href="https://github.com/wrestle-R/ArchJet">Source ↗</a></footer></body></html>
